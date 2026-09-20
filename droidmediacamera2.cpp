@@ -1704,16 +1704,22 @@ char *droid_media_camera_get_parameters(DroidMediaCamera *camera)
             break;
         case ACAMERA_CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES: {
             if (entry.count > 0) {
+                // Camera API 1 reports this range in milli-fps and every
+                // consumer divides by 1000, so scale the camera2 values
+                // (plain fps) accordingly.
                 std::string fps = "preview-fps-range-values=";
+                int32_t max_fps = 0;
                 for (int32_t j = 0; j < entry.count; j = j + 2) {
                     if (j > 0)
                         fps += ",";
-                    fps += "(" + std::to_string(entry.data.i32[j]);
+                    fps += "(" + std::to_string(entry.data.i32[j] * 1000);
                     fps += ",";
-                    fps += std::to_string(entry.data.i32[j+1]) + ")";
+                    fps += std::to_string(entry.data.i32[j+1] * 1000) + ")";
+                    if (entry.data.i32[j+1] > max_fps)
+                        max_fps = entry.data.i32[j+1];
                 }
                 params += fps + ";";
-                params += "preview-frame-rate=30;";
+                params += "preview-frame-rate=" + std::to_string(max_fps) + ";";
             }
             break;
         }
