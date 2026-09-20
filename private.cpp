@@ -145,6 +145,11 @@ bool _DroidMediaBufferQueue::setBufferSize(uint32_t width, uint32_t height)
     return m_queue->setDefaultBufferSize(width, height) == android::OK;
 }
 
+bool _DroidMediaBufferQueue::setBufferFormat(uint32_t format)
+{
+    return m_queue->setDefaultBufferFormat(format) == android::OK;
+}
+
 ANativeWindow *_DroidMediaBufferQueue::window() {
 #if ANDROID_MAJOR == 4 && ANDROID_MINOR < 4
   android::sp<android::ISurfaceTexture> texture = m_queue;

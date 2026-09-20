@@ -587,6 +587,13 @@ bool setup_capture_session(DroidMediaCamera *camera)
 
     ALOGI("setup_capture_session start");
 
+    // Camera API 1 lets the camera service pick the buffer format and it asks
+    // for HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED (0x22), which lets gralloc
+    // choose the vendor layout the renderer knows how to sample. camera2
+    // instead takes the format the surface reports, which is the queue default
+    // YCbCr_420_888 - and the consumer then reads the chroma planes the wrong
+    // way round, so red and blue come out swapped in the viewfinder.
+    camera->m_queue->setBufferFormat(AIMAGE_FORMAT_PRIVATE);
     camera->m_queue->setBufferSize(camera->preview_width, camera->preview_height);
 
     status = ACaptureSessionOutputContainer_create(&camera->m_capture_session_output_container);
