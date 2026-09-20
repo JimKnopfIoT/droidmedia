@@ -183,21 +183,30 @@ static void still_image_available(void* context, AImageReader* reader)
     if (status == AMEDIA_OK) {
         DroidMediaCamera *camera = (DroidMediaCamera *)context;
         DroidMediaData mem;
-        int32_t format;
+        int32_t format = 0;
 
         status = AImage_getFormat(image, &format);
+        if (status != AMEDIA_OK) {
+            ALOGE("Cannot read image format: %d", status);
+            AImage_delete(image);
+            return;
+        }
 
         switch (format) {
         case AIMAGE_FORMAT_JPEG: {
             int32_t num_planes = 0;
+            uint8_t *data = NULL;
+            int data_size = 0;
 
             status = AImage_getNumberOfPlanes(image, &num_planes);
             if (status != AMEDIA_OK || num_planes != 1) {
                 break;
             }
 
-            status = AImage_getPlaneData(image, 0, (uint8_t **)&mem.data, (int *)&mem.size);
+            status = AImage_getPlaneData(image, 0, &data, &data_size);
             if (status == AMEDIA_OK && camera->m_cb.compressed_image_cb) {
+                mem.data = data;
+                mem.size = data_size;
                 camera->m_cb.compressed_image_cb(camera->m_cb_data, &mem);
             }
             break;
@@ -468,6 +477,7 @@ bool setup_image_reader(DroidMediaCamera *camera)
     if (camera->m_image_reader) {
         AImageReader_delete(camera->m_image_reader);
         camera->m_image_reader = NULL;
+        camera->m_image_reader_anw = NULL;
     }
 
     media_status = AImageReader_new(
@@ -508,6 +518,7 @@ fail:
         AImageReader_delete(camera->m_image_reader);
         camera->m_image_reader = NULL;
     }
+    camera->m_image_reader_anw = NULL;
 
     return false;
 }
@@ -653,6 +664,11 @@ bool setup_capture_session(DroidMediaCamera *camera)
     } else {
         // Image mode
         ALOGI("setup_capture_session image start");
+        if (!camera->m_image_reader_anw) {
+            ALOGE("No image reader window available");
+            goto fail;
+        }
+
         status = ACameraDevice_createCaptureRequest(camera->m_device,
             TEMPLATE_STILL_CAPTURE, &camera->m_image_request);
         if (status != ACAMERA_OK) {
