@@ -616,7 +616,18 @@ bool setup_capture_session(DroidMediaCamera *camera)
     if (camera->m_video_mode) {
         // Video mode
         ALOGI("setup_capture_session video start");
-        camera->m_queue->setBufferSize(camera->video_width, camera->video_height);
+        if (!camera->m_recording_queue.get()) {
+            ALOGE("No recording buffer queue available");
+            goto fail;
+        }
+
+        camera->m_recording_queue->setBufferSize(camera->video_width, camera->video_height);
+
+        status = ACameraDevice_createCaptureRequest(camera->m_device,
+            TEMPLATE_RECORD, &camera->m_video_request);
+        if (status != ACAMERA_OK) {
+            goto fail;
+        }
 
         status = ACameraOutputTarget_create(camera->m_recording_queue->window(), &camera->m_video_output_target);
         if (status != ACAMERA_OK) {
