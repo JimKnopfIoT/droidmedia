@@ -148,6 +148,11 @@ DroidMediaRecorder *droid_media_recorder_create(DroidMediaCamera *camera, DroidM
   DroidMediaRecorder *recorder = new DroidMediaRecorder;
   recorder->m_cam = camera;
   android::sp<android::Camera> cam(droid_media_camera_get_camera (camera));
+  if (cam == NULL) {
+    ALOGE("Cannot create recorder: no android::Camera for this camera handle");
+    delete recorder;
+    return NULL;
+  }
 #if ANDROID_MAJOR >= 5
   recorder->m_looper = new android::ALooper;
   recorder->m_looper->setName("DroidMediaRecorderLooper");
